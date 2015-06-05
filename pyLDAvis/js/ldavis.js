@@ -60,7 +60,7 @@ var LDAvis = function(to_select, data_or_file_name) {
 
     // proportion of area of MDS plot to which the sum of default topic circle areas is set
     var circle_prop = 0.25;
-    var word_prop = 0.25;
+    var word_prop = 0.05;
 
     // opacity of topic circles:
     var base_opacity = 0.2,
@@ -454,7 +454,7 @@ var LDAvis = function(to_select, data_or_file_name) {
                 }))
                 .rangeRoundBands([0, barheight], 0.15);
         var x = d3.scale.linear()
-                .domain([1, d3.max(barDefault2, function(d) {
+                .domain([0, d3.max(barDefault2, function(d) {
                     return d.Total;
                 })])
                 .range([0, barwidth])
@@ -480,7 +480,7 @@ var LDAvis = function(to_select, data_or_file_name) {
             .attr("x", barguide.width + 5)
             .attr("y", mdsheight + 10 + barguide.height/2)
             .style("dominant-baseline", "middle")
-            .text("Overall term frequency");
+            .text("Bias activation");
 
         d3.select("#" + barFreqsID).append("rect")
             .attr("x", 0)
@@ -493,27 +493,15 @@ var LDAvis = function(to_select, data_or_file_name) {
             .attr("x", barguide.width/2 + 5)
             .attr("y", mdsheight + 10 + (3/2)*barguide.height + 5)
             .style("dominant-baseline", "middle")
-            .text("Estimated term frequency within the selected topic");
+            .text("Term activation for selected topic");
 
         // footnotes:
         d3.select("#" + barFreqsID)
-            .append("a")
-            .attr("xlink:href", "http://vis.stanford.edu/files/2012-Termite-AVI.pdf")
-            .attr("target", "_blank")
-            .append("text")
-            .attr("x", 0)
-            .attr("y", mdsheight + 10 + (6/2)*barguide.height + 5)
-            .style("dominant-baseline", "middle")
-            .text("1. saliency(term w) = frequency(w) * [sum_t p(t | w) * log(p(t | w)/p(t))] for topics t; see Chuang et. al (2012)");
-        d3.select("#" + barFreqsID)
-            .append("a")
-            .attr("xlink:href", "http://nlp.stanford.edu/events/illvi2014/papers/sievert-illvi2014.pdf")
-            .attr("target", "_blank")
             .append("text")
             .attr("x", 0)
             .attr("y", mdsheight + 10 + (8/2)*barguide.height + 5)
             .style("dominant-baseline", "middle")
-            .text("2. relevance(term w | topic t) = \u03BB * p(w | t) + (1 - \u03BB) * p(w | t)/p(w); see Sievert & Shirley (2014)");
+            .text("1. relevance(term w | topic t) = \u03BB * weight(w, t) + (1 - \u03BB) * (weight(w,t) - mean{t2 != t} weight(w, t2))");
 
         // Bind 'default' data to 'default' bar chart
         var basebars = chart.selectAll(to_select + " .bar-totals")
@@ -577,11 +565,6 @@ var LDAvis = function(to_select, data_or_file_name) {
                 .style("text-anchor", "middle")
                 .style("font-size", "16px")
                 .text("Top-" + R + " Most Salient Terms");
-
-        title.append("tspan")
-            .attr("baseline-shift", "super")
-            .attr("font-size", "12px")
-            .text("(1)");
 
         // barchart axis adapted from http://bl.ocks.org/mbostock/1166403
         var xAxis = d3.svg.axis().scale(x)
@@ -665,7 +648,6 @@ var LDAvis = function(to_select, data_or_file_name) {
                     .attr("y", -5)
                     .style("font-size", "10px")
                     .style("position", "absolute")
-                    .text("(2)");
 
             var sliderDiv = document.createElement("div");
             sliderDiv.setAttribute("id", sliderDivID);
@@ -753,7 +735,7 @@ var LDAvis = function(to_select, data_or_file_name) {
                     }))
                     .rangeRoundBands([0, barheight], 0.15);
             var x = d3.scale.linear()
-                    .domain([1, d3.max(dat3, function(d) {
+                    .domain([0, d3.max(dat3, function(d) {
                         return d.Total;
                     })])
                     .range([0, barwidth])
@@ -863,7 +845,8 @@ var LDAvis = function(to_select, data_or_file_name) {
                     });
                 redbarsEnter
                     .attr("width", function(d) {
-                        return x(d.Freq);
+			// return x(d.Freq);
+                        return x(d.relevance);
                     })
                     .transition().duration(duration)
                     .delay(duration)
@@ -886,7 +869,8 @@ var LDAvis = function(to_select, data_or_file_name) {
                     });
                 redbars.transition().duration(duration)
                     .attr("width", function(d) {
-                        return x(d.Freq);
+                        // return x(d.Freq);
+                        return x(d.relevance);
                     })
                     .transition().duration(duration)
                     .attr("y", function(d) {
@@ -914,7 +898,8 @@ var LDAvis = function(to_select, data_or_file_name) {
                 redbars.exit()
                     .transition().duration(duration)
                     .attr("width", function(d) {
-                        return x(d.Freq);
+                        // return x(d.Freq);
+                        return x(d.relevance);
                     })
                     .transition().duration(duration)
                     .attr("y", function(d, i) {
@@ -949,7 +934,8 @@ var LDAvis = function(to_select, data_or_file_name) {
                     })
                     .transition().duration(duration)
                     .attr("width", function(d) {
-                        return x(d.Freq);
+                        // return x(d.Freq);
+                        return x(d.relevance);
                     });
 
                 graybars.transition().duration(duration)
@@ -970,7 +956,8 @@ var LDAvis = function(to_select, data_or_file_name) {
                     })
                     .transition().duration(duration)
                     .attr("width", function(d) {
-                        return x(d.Freq);
+                        // return x(d.Freq);
+                        return x(d.relevance);
                     });
 
                 // Transition exiting rectangles to the bottom of the barchart:
@@ -1054,7 +1041,7 @@ var LDAvis = function(to_select, data_or_file_name) {
                     }))
                     .rangeRoundBands([0, barheight], 0.15);
             var x = d3.scale.linear()
-                    .domain([1, d3.max(dat3, function(d) {
+                    .domain([0, d3.max(dat3, function(d) {
                         return d.Total;
                     })])
                     .range([0, barwidth])
@@ -1104,7 +1091,8 @@ var LDAvis = function(to_select, data_or_file_name) {
                 })
                 .attr("height", y.rangeBand())
                 .attr("width", function(d) {
-                    return x(d.Freq);
+                    // return x(d.Freq);
+                    return x(d.relevance);
                 })
                 .style("fill", color2)
                 .attr("opacity", 0.8);
@@ -1150,7 +1138,7 @@ var LDAvis = function(to_select, data_or_file_name) {
                     }))
                     .rangeRoundBands([0, barheight], 0.15);
             var x = d3.scale.linear()
-                    .domain([1, d3.max(dat2, function(d) {
+                    .domain([0, d3.max(dat2, function(d) {
                         return d.Total;
                     })])
                     .range([0, barwidth])
@@ -1222,7 +1210,8 @@ var LDAvis = function(to_select, data_or_file_name) {
                 radius[i] = 0;
             }
             for (i = 0; i < k; i++) {
-                radius[dat2[i].Topic - 1] = dat2[i].Freq;
+                // radius[dat2[i].Topic - 1] = dat2[i].Freq;
+                radius[dat2[i].Topic - 1] = dat2[i].logprob
             }
 
             var size = [];
@@ -1261,7 +1250,7 @@ var LDAvis = function(to_select, data_or_file_name) {
 
             // Alter the guide
             d3.select(to_select + " .circleGuideTitle")
-                .text("Conditional topic distribution given term = '" + term.innerHTML + "'");
+                .text("Topic weight for term = '" + term.innerHTML + "'");
         }
 
         function term_off(term) {

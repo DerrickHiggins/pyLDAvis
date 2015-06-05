@@ -105,7 +105,7 @@ def _topic_coordinates(mds, topic_term_dists, topic_proportion):
    K = topic_term_dists.shape[0]
    mds_res = mds(topic_term_dists)
    assert mds_res.shape == (K, 2)
-   mds_df = pd.DataFrame({'x': mds_res[:,0], 'y': mds_res[:,1], 'topics': range(1, K + 1), \
+   mds_df = pd.DataFrame({'x': mds_res[:,0], 'y': mds_res[:,1], 'topics': list(range(1, K + 1)), \
                           'cluster': 1, 'Freq': topic_proportion * 100})
    # note: cluster (should?) be deprecated soon. See: https://github.com/cpsievert/LDAvis/issues/26
    return mds_df
@@ -133,7 +133,7 @@ def _find_relevance(log_ttd, log_lift, R, lambda_):
 
 
 def _find_relevance_chunks(log_ttd, log_lift, R, lambda_seq):
-   return pd.concat(map(lambda l: _find_relevance(log_ttd, log_lift, R, l), lambda_seq))
+   return pd.concat([_find_relevance(log_ttd, log_lift, R, l) for l in lambda_seq])
 
 
 def _topic_info(topic_term_dists, topic_proportion, term_frequency, term_topic_freq, vocab, lambda_step, R, n_jobs):
@@ -173,7 +173,7 @@ def _topic_info(topic_term_dists, topic_proportion, term_frequency, term_topic_f
 
    top_terms = pd.concat(Parallel(n_jobs=n_jobs)(delayed(_find_relevance_chunks)(log_ttd, log_lift, R, ls) \
                                                  for ls in _job_chunks(lambda_seq, n_jobs)))
-   topic_dfs = map(topic_top_term_df, enumerate(top_terms.T.iterrows(), 1))
+   topic_dfs = list(map(topic_top_term_df, enumerate(top_terms.T.iterrows(), 1)))
    return pd.concat([default_term_info] + list(topic_dfs))
 
 
@@ -188,7 +188,7 @@ def _token_table(topic_info, term_topic_freq, vocab, term_frequency):
    top_topic_terms_freq = term_topic_freq[term_ix]
    # use the new ordering for the topics
    K = len(term_topic_freq)
-   top_topic_terms_freq.index = range(1, K + 1)
+   top_topic_terms_freq.index = list(range(1, K + 1))
    top_topic_terms_freq.index.name = 'Topic'
 
    # we filter to Freq >= 0.5 to avoid sending too much data to the browser
@@ -299,9 +299,9 @@ def prepare(topic_term_dists, doc_topic_dists, doc_lengths, vocab, term_frequenc
 class PreparedData(namedtuple('PreparedData', ['topic_coordinates', 'topic_info', 'token_table',\
                                                'R', 'lambda_step', 'plot_opts', 'topic_order'])):
     def to_dict(self):
-       return {'mdsDat': self.topic_coordinates.to_dict(orient='list'),
-               'tinfo': self.topic_info.to_dict(orient='list'),
-               'token.table': self.token_table.to_dict(orient='list'),
+       return {'mdsDat': self.topic_coordinates.to_dict(outtype='list'),
+               'tinfo': self.topic_info.to_dict(outtype='list'),
+               'token.table': self.token_table.to_dict(outtype='list'),
                'R': self.R,
                'lambda.step': self.lambda_step,
                'plot.opts': self.plot_opts,
